@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>明天吃什么 · 美食命签</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #fff5e6 0%, #ffe8cc 50%, #ffd699 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: #d4623f;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            letter-spacing: 2px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            color: #8b5a3c;
+            opacity: 0.9;
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #d4623f, transparent);
+            margin: 20px 0;
+            opacity: 0.5;
+        }
+
+        /* 转盘容器 */
+        .wheel-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+            perspective: 1000px;
+        }
+
+        .wheel {
+            width: 280px;
+            height: 280px;
+            background: conic-gradient(
+                from 0deg,
+                #ff6b6b, #ff8787, #ffa5a5, #ffadad, #ff8c8c,
+                #ffb347, #ffcc99, #ffe5b4, #ffd699, #ffb366,
+                #95e1d3, #a8f5d9, #b8f8e3, #c4ffee, #d1fff5,
+                #74b9ff, #a0d7ff, #c1e9ff, #dff5ff, #b3d9ff
+            );
+            border-radius: 50%;
+            box-shadow: 0 10px 40px rgba(212, 98, 63, 0.3),
+                        0 0 0 8px rgba(255, 255, 255, 0.8),
+                        inset 0 0 30px rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 80px;
+            font-weight: bold;
+            user-select: none;
+        }
+
+        .wheel:hover {
+            transform: scale(1.05) rotateZ(5deg);
+        }
+
+        .wheel.spinning {
+            animation: spin 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        @keyframes spin {
+            0% { transform: rotateZ(0deg); }
+            100% { transform: rotateZ(720deg); }
+        }
+
+        .pointer {
+            position: absolute;
+            top: -15px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 20px solid #d4623f;
+            z-index: 10;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        /* 结果卡片 */
+        .result-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 40px rgba(212, 98, 63, 0.2);
+            text-align: center;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .result-card.show {
+            opacity: 1;
+            max-height: 800px;
+        }
+
+        .dish-emoji {
+            font-size: 5em;
+            margin-bottom: 20px;
+            animation: bounce 0.6s ease-out;
+        }
+
+        @keyframes bounce {
+            0% {
+                transform: scale(0) rotateZ(-45deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1) rotateZ(0);
+            }
+        }
+
+        .dish-name {
+            font-size: 2.2em;
+            color: #d4623f;
+            margin-bottom: 20px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .fortune-section {
+            background: linear-gradient(135deg, #fef5e7 0%, #fdebd0 100%);
+            border-left: 4px solid #f39c12;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        .fortune-label {
+            font-size: 0.9em;
+            color: #d4623f;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .fortune-text {
+            font-size: 1.1em;
+            color: #8b5a3c;
+            line-height: 1.8;
+            font-style: italic;
+        }
+
+        .reason-label {
+            font-size: 0.9em;
+            color: #2874a6;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .reason-text {
+            font-size: 1em;
+            color: #34495e;
+            line-height: 1.8;
+        }
+
+        .reason-section {
+            background: linear-gradient(135deg, #ebf5fb 0%, #d6eaf8 100%);
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        /* 按钮组 */
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 14px 32px;
+            font-size: 1em;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+        }
+
+        .btn-draw {
+            background: linear-gradient(135deg, #d4623f 0%, #c24a2e 100%);
+            color: white;
+            padding: 16px 40px;
+            font-size: 1.1em;
+            box-shadow: 0 8px 20px rgba(212, 98, 63, 0.3);
+            text-transform: uppercase;
+        }
+
+        .btn-draw:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(212, 98, 63, 0.4);
+        }
+
+        .btn-draw:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-again {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+
+        .btn-again:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(243, 156, 18, 0.3);
+        }
+
+        .btn-share {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .btn-share:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        /* 装饰元素 */
+        .decoration {
+            position: fixed;
+            font-size: 3em;
+            opacity: 0.1;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .deco1 { top: 10%; left: 5%; animation: float 8s ease-in-out infinite; }
+        .deco2 { top: 30%; right: 8%; animation: float 10s ease-in-out infinite 1s; }
+        .deco3 { bottom: 15%; left: 10%; animation: float 9s ease-in-out infinite 2s; }
+        .deco4 { bottom: 25%; right: 10%; animation: float 7s ease-in-out infinite 0.5s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotateZ(0deg); }
+            50% { transform: translateY(-30px) rotateZ(5deg); }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .pulse-ring {
+            position: absolute;
+            border: 3px solid rgba(212, 98, 63, 0.5);
+            border-radius: 50%;
+            animation: expandRing 2s ease-out infinite;
+        }
+
+        @keyframes expandRing {
+            from {
+                width: 260px;
+                height: 260px;
+                opacity: 1;
+            }
+            to {
+                width: 320px;
+                height: 320px;
+                opacity: 0;
+            }
+        }
+
+        /* 烟火效果 */
+        .confetti {
+            position: fixed;
+            pointer-events: none;
+            animation: confetti-fall 3s linear forwards;
+            z-index: 20;
+        }
+
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotateZ(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* 响应式 */
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .wheel {
+                width: 220px;
+                height: 220px;
+                font-size: 60px;
+            }
+
+            .result-card {
+                padding: 30px 20px;
+            }
+
+            .dish-name {
+                font-size: 1.8em;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+
+        /* 音频控制 */
+        .audio-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #d4623f;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em;
+            box-shadow: 0 4px 12px rgba(212, 98, 63, 0.2);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .audio-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .audio-toggle.muted {
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+    <!-- 装饰元素 -->
+    <div class="decoration deco1">🍜</div>
+    <div class="decoration deco2">🍕</div>
+    <div class="decoration deco3">🍣</div>
+    <div class="decoration deco4">🍝</div>
+
+    <!-- 音频开关 -->
+    <button class="audio-toggle" id="audioToggle">🔊</button>
+
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>🎯 明天吃什么</h1>
+            <p>✨ 命签美食探险 ✨</p>
+            <div class="divider"></div>
+        </div>
+
+        <!-- 转盘 -->
+        <div class="wheel-container">
+            <div class="pulse-ring"></div>
+            <div class="pointer"></div>
+            <div class="wheel" id="wheel">🎲</div>
+        </div>
+
+        <!-- 结果卡片 -->
+        <div class="result-card" id="resultCard">
+            <div class="dish-emoji" id="dishEmoji">🍜</div>
+            <div class="dish-name" id="dishName">美食推荐</div>
+
+            <div class="fortune-section">
+                <div class="fortune-label">🌟 食运签名</div>
+                <div class="fortune-text" id="fortune">等待你的美食命运...</div>
+            </div>
+
+            <div class="reason-section">
+                <div class="reason-label">💡 推荐理由</div>
+                <div class="reason-text" id="reason">为什么今天要吃这道菜...</div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-again" onclick="drawFortune()">再抽一次 🎲</button>
+                <button class="btn-share" onclick="shareResult()">分享给朋友 📤</button>
+            </div>
+        </div>
+
+        <!-- 初始按钮 -->
+        <div style="text-align: center;" id="initialButton">
+            <button class="btn-draw" onclick="drawFortune()" id="drawBtn">
+                👆 点击抽签 · 开启美食之旅 👆
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 美食数据库
+        const foodDatabase = [
+            {
+                name: '红油抄手',
+                emoji: '🥟',
+                fortune: '红红火火真团圆，麻辣鲜香入口甜。江湖菜肴传古韵，一碗抄手寄思念。',
+                reason: '这道四川经典小吃承载着市井温度。红油的麻辣激发味蕾，清汤的鲜美舒服肠胃。适合忙碌后犒劳自己，一个人也能享受家的温度。'
+            },
+            {
+                name: '麻辣小龙虾',
+                emoji: '🦐',
+                fortune: '岁月如虾，一层层蜕变成长；青春似火，热烈才能活出真容。',
+                reason: '夏日的灵魂食物。麻辣刺激唤醒所有感官，剥虾的仪式感让进食变成冥想。配啤酒或冰茶，就是最惬意的街头美学。'
+            },
+            {
+                name: '清汤面线糊',
+                emoji: '🍜',
+                fortune: '清汤淡然如人生，简单才是最深处的满足；软糊温柔似归家，每一口都是温暖的怀抱。',
+                reason: '台湾古早味的治愈法宝。晨起一碗，食材在清汤中融合出岁月的味道。榨菜、蛋、油条的搭配堪称完美，是外婆手艺的现代缩影。'
+            },
+            {
+                name: '京酱肉丝配饼',
+                emoji: '🥠',
+                fortune: '甜咸交织似人生百味，肉丝细卷似生活打磨，饼皮包裹似家的怀抱。',
+                reason: '北京餐桌的经典之作。酱香浓郁却不腻，葱丝的清爽平衡了肉的厚重。自己卷饼的过程，是对美食最诚恳的尊重。'
+            },
+            {
+                name: '番茄鸡蛋面',
+                emoji: '🍅',
+                fortune: '红色是热血的颜色，是生活的底色；鸡蛋是圆满的象征，是循环的开始。',
+                reason: '宿舍和办公室的深夜救星。番茄的酸开胃，鸡蛋的香补气，热汤最舒服。用最简单的食材做出最温暖的面，这就是食物的大智若愚。'
+            },
+            {
+                name: '泰式冬阴功汤',
+                emoji: '🥘',
+                fortune: '酸辣交织是修行，一碗汤装下东南亚的灵魂；每一个料都有故事，每一种香都是告白。',
+                reason: '打开味蕾的冒险之旅。柠檬草的清香、辣椒的热烈、虾的鲜甜，层次丰富得像一场交响乐。适合想要突破舒适圈的那些日子。'
+            },
+            {
+                name: '意大利烩饭',
+                emoji: '🍚',
+                fortune: '米粒似星辰，在奶酱的宇宙中闪闪发光；相融相合才成好饭，人亦如此。',
+                reason: '欧洲餐桌上的奢侈。米粒吸饱汤汁却保留口感，帕玛森芝士的香在舌尖化开。这道菜考验耐心和火候，就像生活的节奏需要调整。'
+            },
+            {
+                name: '日式豚骨汤',
+                emoji: '🍲',
+                fortune: '醇厚似人生积累，需要时间才能沉淀出深度；一碗好汤，是等待的回报。',
+                reason: '日本的国民温暖。骨汤熬制24小时才成就这份白浓，面条Q弹，叉烧软嫩。在寒冷或疲惫时，这碗汤比语言更治愈。'
+            },
+            {
+                name: '宫保鸡丁',
+                emoji: '🍗',
+                fortune: '花生碎如人生的小幸运，鸡丁似坚持的力量；咸鲜微甜是最妙的平衡。',
+                reason: '川菜中最亲民的气质。鸡丁的嫩、花生的香、辣椒的热，三者碰撞出完整的味觉体验。简单却不简陋，家常却很上台面。'
+            },
+            {
+                name: '榴莲披萨',
+                emoji: '🍕',
+                fortune: '爱你的人大爱，厌你的人深厌；真诚活着，不负好滋味。',
+                reason: '勇敢者的美食宣言。榴莲的王者气息与披萨的包容完美融合，奶酪的醇厚承托榴莲的香甜。这是一道需要有信念才能吃的菜。'
+            },
+            {
+                name: '广州早茶',
+                emoji: '🥡',
+                fortune: '一口一个故事，一点一盏灯；慢生活在茶香中熬出智慧的底色。',
+                reason: '南方人的生活哲学。虾饺的晶莹剔透、叉烧包的甜香、肠粉的滑软，配茶品慢慢吃才是精髓。这不只是早餐，是与亲人交心的仪式。'
+            },
+            {
+                name: '兰州拉面',
+                emoji: '🍜',
+                fortune: '手工拉面如人生的韧度，经过折叠才能成就；一碗汤是所有努力的浓缩。',
+                reason: '丝路上的古老智慧。面条的筋道、汤底的醇厚、牛肉的鲜香，每一版本都有故事。在陌生城市吃一碗拉面，就像在灵魂里装了家乡。'
+            },
+            {
+                name: '韩式烤肉',
+                emoji: '🥩',
+                fortune: '炭火上的人生百味，烤出了热血和坚持；自己烤自己吃，才是生活的主人。',
+                reason: '社交餐桌的主角。在烤盘上看肉变色，听滋滋声和欢笑声混成一曲；腌制的技艺让每一口都是惊喜，啤酒和烤肉是永恒的搭档。'
+            },
+            {
+                name: '新加坡辣椒螃蟹',
+                emoji: '🦀',
+                fortune: '螃蟹的坚硬外壳是防御，辣椒的热烈是突破；只有打开自己，才能品到最鲜的滋味。',
+                reason: '东南亚的奢侈想象。螃蟹的鲜、辣椒的热、西红柿的酸，三者在盘中共鸣。用手去剥、去吃、去享受，这是最原始也最诚恳的美食对话。'
+            },
+            {
+                name: '黑松露意面',
+                emoji: '🍝',
+                fortune: '黑松露是大地的秘宝，面条是人类的智慧；相遇才能成就这世上最贵的口福。',
+                reason: '米其林餐桌上的诗句。黑松露的香贯穿每一根面条，帕玛森的香在舌尖跳舞，这是对人生奢侈时刻的最好定义。'
+            },
+            {
+                name: '黑毛和牛',
+                emoji: '🥩',
+                fortune: '纹理似人生的记忆，油脂是年月的积累；入口即化是一场优雅的告别。',
+                reason: '日本的骨董级美食。大理石般的纹路、入口即化的口感、岩盐的简单调味，让食材本身成为主角。这不是饱腹，是灵魂的满足。'
+            },
+            {
+                name: '法国鹅肝',
+                emoji: '🦆',
+                fortune: '柔软如云似人生的温柔时刻，奢华不是目标，品味才是修行。',
+                reason: '欧洲皇室的最爱。鹅肝的柔滑在舌尖化开，配葡萄酒或面包才能品出个中妙处。这是对食物的敬畏，也是对自己的犒劳。'
+            },
+            {
+                name: '秘制盐焗鸡',
+                emoji: '🍗',
+                fortune: '粗盐似人生的打磨，焗制似时间的沉淀；最简单的手法锁住最深的滋味。',
+                reason: '广东餐桌的经典。鸡肉的鲜嫩被盐完全锁住，撕开后肉汁四溅，这种简单却极致的做法，体现了工匠精神的灵魂。'
+            },
+            {
+                name: '越南春卷',
+                emoji: '🥗',
+                fortune: '透明如诚心的外衣，包裹着丰富的灵魂；咬下去就是惊喜的瞬间。',
+                reason: '东南亚的精致哲学。透明米皮包裹虾、肉和香草的组合，酸辣鱼露是灵魂，一口一个惊喜。轻盈却有内涵，简单却很讲究。'
+            },
+            {
+                name: '印度咖喱饭',
+                emoji: '🍛',
+                fortune: '千年香料似岁月的积淀，咖喱的色彩是人生的丰富；一碗饭装下整个印度的灵魂。',
+                reason: '香料国度的邀请函。咖喱的复杂香气在一口米饭中绽放，椰奶的醇厚和辣椒的热烈达到完美平衡。这是一道需要时间去理解的菜。'
+            },
+            {
+                name: '北京烤鸭',
+                emoji: '🦆',
+                fortune: '火候似人生的修行，脆皮似突破的闪闪发光；配葱油饼就是完整的自己。',
+                reason: '中国美食的文化符号。鸭皮的脆、鸭肉的嫩、葱段的香和甜面酱的味，卷在薄饼里就是人生最舒适的刹那。百年老字号的味道不会骗人。'
+            },
+            {
+                name: '海南鸡饭',
+                emoji: '🍚',
+                fortune: '白鸡似清心，油饭似深情；清汤似人生的简洁美学，一碗就够满足。',
+                reason: '东南亚最谦逊的美食。鸡的鲜、饭的油香、汤的清爽，三样都简单却都讲究。这道菜最考验食材的质量和烹饪的火候，是功夫派美食。'
+            },
+            {
+                name: '墨西哥玉米饼',
+                emoji: '🌮',
+                fortune: '玉米的古老智慧与现代的碰撞，每一种料都是故事，包裹的是南美的热血。',
+                reason: '街头美食的王者。玉米饼的香、肉类的鲜、酸奶油和莎莎酱的搭配，每一口都是层次的爆发。手拿着吃、大口咬下去，这才是美食的本质。'
+            },
+            {
+                name: '葡萄牙蛋挞',
+                emoji: '🥧',
+                fortune: '酥皮似爱的外壳，蛋液似温暖的心；一口咬下来，是城市的记忆。',
+                reason: '澳门的记忆名片。焦黄的酥皮、滑嫩的蛋液、肉桂的香气，这个小小的挞浓缩了葡萄牙和中国的完美融合。配咖啡是下午最治愈的时刻。'
+            },
+            {
+                name: '瑞典肉丸',
+                emoji: '🍲',
+                fortune: '小小肉丸是北欧的温暖哲学，蘑菇汤是森林的故事；每一个都值得细细品尝。',
+                reason: '宜家的灵魂餐点。肉丸的嫩、蘑菇汤的香、蔓越莓的酸，家常却高级。这道菜最适合冷冬夜晚，端起一碗就感受到北欧人的温度。'
+            },
+            {
+                name: '泰式青木瓜沙拉',
+                emoji: '🥗',
+                fortune: '青木瓜似未熟的人生，需要辣椒的激励才能成长；酸辣咸甜是最妙的平衡。',
+                reason: '东南亚的清爽革命。生的脆爽、辣椒的热、鱼露的鲜、柠檬的酸，一碗沙拉就是一场味觉的冒险。饱满却不腻，是夏天最好的伙伴。'
+            },
+            {
+                name: '日式天妇罗',
+                emoji: '🍤',
+                fortune: '金黄的衣裳似生活的闪闪发光，简单的裹衣却能升华食材的灵魂。',
+                reason: '日本人的极致追求。炸至金黄的虾和蔬菜，外脆内嫩的口感是绝妙的对比。配热汤或冷盐都能吃，这是对温度智慧的理解。'
+            },
+            {
+                name: '西班牙海鲜饭',
+                emoji: '🥘',
+                fortune: '黄色似地中海的阳光，米粒似大地的故事；番红花是西班牙的灵魂，一碗就是诗歌。',
+                reason: '伊比利亚半岛的浪漫想象。米饭吸饱海鲜的鲜、番红花的香、番茄和洋葱的甜，底部的焦香(socarrat)是灵魂。这道菜需要火候和耐心。'
+            },
+            {
+                name: '意大利烩菜',
+                emoji: '🍆',
+                fortune: '茄子、番茄的紫红似热血，橄榄油似液态的阳光；层层堆积就是人生的深度。',
+                reason: '南意大利的家常温暖。各种蔬菜在橄榄油中经历三小时的炖制，每个都吸满了彼此的味道。冷吃热吃都美味，是最能代表意大利灵魂的菜。'
+            }
+        ];
+
+        // 音效
+        class AudioManager {
+            constructor() {
+                this.isMuted = false;
+                this.setupAudio();
+            }
+
+            setupAudio() {
+                // 创建音频上下文
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.audioContext = audioContext;
+                this.toggle = document.getElementById('audioToggle');
+                this.toggle.addEventListener('click', () => this.toggleMute());
+            }
+
+            playSound(type) {
+                if (this.isMuted) return;
+
+                const audioContext = this.audioContext;
+                const now = audioContext.currentTime;
+
+                switch(type) {
+                    case 'spin':
+                        // 转盘音效
+                        for (let i = 0; i < 3; i++) {
+                            const osc = audioContext.createOscillator();
+                            const gain = audioContext.createGain();
+                            osc.connect(gain);
+                            gain.connect(audioContext.destination);
+                            osc.frequency.setValueAtTime(400 + i * 100, now);
+                            osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+                            gain.gain.setValueAtTime(0.2, now);
+                            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                            osc.start(now + i * 0.05);
+                            osc.stop(now + 0.1 + i * 0.05);
+                        }
+                        break;
+                    case 'reveal':
+                        // 揭晓音效
+                        const osc = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioContext.destination);
+                        osc.frequency.setValueAtTime(800, now);
+                        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.3);
+                        gain.gain.setValueAtTime(0.2, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                        osc.start(now);
+                        osc.stop(now + 0.3);
+                        break;
+                }
+            }
+
+            toggleMute() {
+                this.isMuted = !this.isMuted;
+                this.toggle.classList.toggle('muted');
+                this.toggle.textContent = this.isMuted ? '🔇' : '🔊';
+            }
+        }
+
+        const audioManager = new AudioManager();
+
+        // 烟火效果
+        function createConfetti() {
+            const emojis = ['🎉', '✨', '🌟', '⭐', '🎊', '🎈', '🍽️', '😋'];
+            for (let i = 0; i < 20; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.top = '-20px';
+                confetti.style.fontSize = (Math.random() * 20 + 20) + 'px';
+                confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 3500);
+            }
+        }
+
+        // 抽签函数
+        function drawFortune() {
+            const wheel = document.getElementById('wheel');
+            const resultCard = document.getElementById('resultCard');
+            const drawBtn = document.getElementById('drawBtn');
+            const initialButton = document.getElementById('initialButton');
+
+            // 禁用按钮
+            drawBtn.disabled = true;
+
+            // 播放转盘音效
+            audioManager.playSound('spin');
+
+            // 转盘动画
+            wheel.classList.add('spinning');
+
+            // 随机延迟以增加悬念
+            setTimeout(() => {
+                const randomFood = foodDatabase[Math.floor(Math.random() * foodDatabase.length)];
+
+                // 播放揭晓音效
+                audioManager.playSound('reveal');
+
+                // 更新卡片内容
+                document.getElementById('dishEmoji').textContent = randomFood.emoji;
+                document.getElementById('dishName').textContent = randomFood.name;
+                document.getElementById('fortune').textContent = randomFood.fortune;
+                document.getElementById('reason').textContent = randomFood.reason;
+
+                // 显示结果卡片
+                resultCard.classList.add('show');
+                initialButton.style.display = 'none';
+
+                // 生成烟火
+                createConfetti();
+
+                // 移除转盘动画类
+                wheel.classList.remove('spinning');
+
+                // 重新启用按钮
+                drawBtn.disabled = false;
+                drawBtn.style.display = 'none';
+            }, 1500);
+        }
+
+        // 分享功能
+        function shareResult() {
+            const dishName = document.getElementById('dishName').textContent;
+            const fortune = document.getElementById('fortune').textContent;
+            const text = `🎯 我的明天美食命签：${dishName}\n\n✨ 食运签名\n${fortune}\n\n\n--- 用\"明天吃什么\" 命签给你的惊喜 ---`;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: '我的美食命签',
+                    text: text
+                });
+            } else {
+                // 复制到剪贴板
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('已复制到剪贴板！分享给你的朋友吧 🍽️');
+                });
+            }
+        }
+
+        // 页面加载完成
+        document.addEventListener('DOMContentLoaded', () => {
+            // 添加欢迎动画
+            console.log('🎯 欢迎来到美食命签！');
+        });
+    </script>
+</body>
+</html>
